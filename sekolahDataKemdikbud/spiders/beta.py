@@ -351,4 +351,4 @@ class SpiderBeta(scrapy.Spider):
                 }
             }
             save_json(data, os.path.join(path, filename))
-            # upload_to_s3(local_path, s3path.replace('s3://', ''))
+            upload_to_s3(local_path, s3path.replace('s3://', ''))
