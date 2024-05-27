@@ -26,7 +26,7 @@ RETRY_HTTP_CODES = [503, 500]  # Kode HTTP yang ingin di-retry
 RETRY_BACKOFF_FACTOR = 2  # Faktor backoff (2^n)
 
 
-CONCURRENT_REQUESTS = 50
+CONCURRENT_REQUESTS = 16
 
 DOWNLOAD_DELAY = 0.5 
 
