@@ -13,3 +13,8 @@ Run Spider ->
 ```bash 
 scrapy crawl beta
 ```
+
+or you can use
+```bash 
+py spider_run.py
+```
