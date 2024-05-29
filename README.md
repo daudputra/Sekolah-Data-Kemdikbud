@@ -1,5 +1,3 @@
-Get detailed school data in all districts and provinces in Indonesia
-
 ## Clone
 
 ```bash
