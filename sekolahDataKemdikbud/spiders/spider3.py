@@ -359,12 +359,12 @@ class SpiderBeta(scrapy.Spider):
 
 
 
-            path = os.path.join('json', kabupaten_json, jenjang_pen_json)
+            path = os.path.join('data', kabupaten_json, jenjang_pen_json, 'json')
             os.makedirs(path, exist_ok=True)
-            filename = f'{kabupaten_json}_{jenjang_pen_json}_{npsn}_.json'
+            filename = f'{kabupaten_json}_{jenjang_pen_json}_{npsn}.json'
 
-            local_path = f'~/engine-daud/Sekolah-Data-Kemdikbud/sekolahDataKemdikbud/json/{kabupaten_json}/{jenjang_pen_json}/{filename}'
-            s3path = f's3://ai-pipeline-raw-data/data/data_statistics/kemendikbud/{data_name}/json/{kabupaten_json}/{jenjang_pen_json}/{filename}'
+            local_path = f'~/engine-daud/Sekolah-Data-Kemdikbud/sekolahDataKemdikbud/data/{kabupaten_json}/{jenjang_pen_json}/json/{filename}'
+            s3path = f's3://ai-pipeline-raw-data/data/data_statistics/kemendikbud/{data_name}/{kabupaten_json}/{jenjang_pen_json}/json/{filename}'
 
             data = {
                 "link": response.url,
@@ -404,6 +404,7 @@ class SpiderBeta(scrapy.Spider):
                 self.log_detail_links(f"Success upload {filename} to s3")
             except Exception as e:
                 self.log_detail_links(f"Error upload to s3: {str(e)}")
+                self.log_error(f"Error upload to s3: {str(e)}")
                 
             
 

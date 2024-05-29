@@ -9,6 +9,7 @@
 
 BOT_NAME = "sekolahDataKemdikbud"
 
+
 SPIDER_MODULES = ["sekolahDataKemdikbud.spiders"]
 NEWSPIDER_MODULE = "sekolahDataKemdikbud.spiders"
 
@@ -30,10 +31,10 @@ LOG_LEVEL = 'DEBUG'  # Atur level logging sesuai kebutuhan Anda
 RETRY_ENABLED = True
 RETRY_TIMES = 10  # Jumlah maksimum percobaan
 RETRY_HTTP_CODES = [503, 500]  # Kode HTTP yang ingin di-retry
-RETRY_BACKOFF_FACTOR = 2 
+RETRY_BACKOFF_FACTOR = 2
 
 
-CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 5
 
 DOWNLOAD_DELAY = 0.5 
 
