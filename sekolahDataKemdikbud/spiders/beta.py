@@ -316,8 +316,8 @@ class SpiderBeta(scrapy.Spider):
             os.makedirs(path, exist_ok=True)
             filename = f'{kabupaten_json}_{jenjang_pen_json}_{npsn}_.json'
 
-            local_path = f'~/engine-daud/Sekolah-Data-Kemdikbud/sekolahDataKemdikbud/json/{filename}'
-            s3path = f's3://ai-pipeline-raw-data/data/data_statistics/kemendikbud/{data_name}/json/{filename}'
+            local_path = f'~/engine-daud/Sekolah-Data-Kemdikbud/sekolahDataKemdikbud/json/{kabupaten_json}/{jenjang_pen_json}/{filename}'
+            s3path = f's3://ai-pipeline-raw-data/data/data_statistics/kemendikbud/{data_name}/json/{kabupaten_json}/{jenjang_pen_json}/{filename}'
 
             data = {
                 "link": response.url,

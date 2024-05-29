@@ -7,6 +7,7 @@ from shapely.geometry import LineString
 from ..tools.save_json.save import save_json
 from ..tools.s3_token.token import upload_to_s3
 from datetime import datetime
+from ..log_config import error_logger, links_logger, detail_links_logger
 
 
 class SpiderBeta(scrapy.Spider):
@@ -18,13 +19,24 @@ class SpiderBeta(scrapy.Spider):
         cleaned_text = text.replace('\u201c', '').replace('\u00a0','').replace('\n','').replace('\r', '')
         return cleaned_text
     
+    def log_error(self, message):
+        error_logger.error(message)
+
+    def log_links(self, message):
+        links_logger.info(message)
+
+    def log_detail_links(self, message):
+        detail_links_logger.debug(message)
+
     def parse(self, response):
+        self.log_links(self.name)
         if response.status == 503:
-            self.logger.info("Got 503 Service Unavailable, retrying...")
+            self.log_error("Got 503 Service Unavailable, retrying...")
             request = response.request.copy()
             request.dont_filter = True
             yield request
         else:
+            self.log_links("Success!")
             ul_jenjang  = response.css('body > div.container > div > div:nth-child(2) > div > div > div:nth-child(1) > div:nth-child(2) > div > select > option')
             for li_element in ul_jenjang:
                 li_text = li_element.css('::text').get()
@@ -54,48 +66,55 @@ class SpiderBeta(scrapy.Spider):
 
                 
                 for link in links:
-                    yield scrapy.Request(link, callback=self.parse_detail)
+                        yield scrapy.Request(link, callback=self.parse_detail)
+
 
 
 
 
     def parse_detail(self, response):
-        data_script = response.xpath("/html/body/div[2]/div/div[3]/script[3]").get()
-        pattern = r'<li class="list-group-item text-muted">NPSN : (\d+)</li>' \
-                r'.*?<li class="list-group-item text-info"><a href="(.+?)" target="_blank">(.+?)</a></li>' \
-                r'.*?<li class="list-group-item text-muted"><b>Alamat</b> : (.+?)</li>' \
-                r'.*?L\.marker\(L\.latLng\(([\d.-]+),([\d.-]+)\)\)'
+        if response.status == 503:
+            self.log_error("Got 503 Service Unavailable, retrying...")
+            request = response.request.copy()
+            request.dont_filter = True
+            yield request
+        else:
+            self.log_links("Parsing detail: %s" % response.url)
+            data_script = response.xpath("/html/body/div[2]/div/div[3]/script[3]").get()
+            pattern = r'<li class="list-group-item text-muted">NPSN : (\d+)</li>' \
+                    r'.*?<li class="list-group-item text-info"><a href="(.+?)" target="_blank">(.+?)</a></li>' \
+                    r'.*?<li class="list-group-item text-muted"><b>Alamat</b> : (.+?)</li>' \
+                    r'.*?L\.marker\(L\.latLng\(([\d.-]+),([\d.-]+)\)\)'
 
-        data_list = re.findall(pattern, data_script, re.DOTALL)
-        
-        for data in data_list:
-            npsn = data[0].strip()
-            url_detail_sekolah = data[1].strip()
-            nama_sekolah = data[2].strip()
-            alamat = data[3].strip()
-            latitude = data[4]
-            longitude = data[5]
-            cordinat = [float(latitude), float(longitude)]
-
-
+            data_list = re.findall(pattern, data_script, re.DOTALL)
             
-            jenjang_pen = response.url.split('/')[-1]       
-            kabupaten_value = response.url.split('/')[-2]
-            kabupaten = response.xpath(f'//select[@id="kode_kabupaten"]/option[@value="{kabupaten_value}"]/text()').get()
+            for data in data_list:
+                npsn = data[0].strip()
+                url_detail_sekolah = data[1].strip()
+                nama_sekolah = data[2].strip()
+                alamat = data[3].strip()
+                latitude = data[4]
+                longitude = data[5]
+                cordinat = [float(latitude), float(longitude)]
 
-          
 
-            yield scrapy.Request(url_detail_sekolah, callback=self.parse_detail_sekolah, 
-            meta={'npsn': npsn, 'cordinat': cordinat, 'nama_sekolah': nama_sekolah, 'alamat': alamat, 'jenjang_pen': jenjang_pen, "kabupaten": kabupaten}
-            )
+                
+                jenjang_pen = response.url.split('/')[-1]       
+                kabupaten_value = response.url.split('/')[-2]
+                kabupaten = response.xpath(f'//select[@id="kode_kabupaten"]/option[@value="{kabupaten_value}"]/text()').get()
+
+                yield scrapy.Request(url_detail_sekolah, callback=self.parse_detail_sekolah, 
+                meta={'npsn': npsn, 'cordinat': cordinat, 'nama_sekolah': nama_sekolah, 'alamat': alamat, 'jenjang_pen': jenjang_pen, "kabupaten": kabupaten}
+                )
 
     def parse_detail_sekolah(self, response):
         if response.status == 503:
-            self.logger.info("Got 503 Service Unavailable, retrying...")
+            self.log_error("Got 503 Service Unavailable, retrying...")
             request = response.request.copy()
             request.dont_filter = True
             yield request
         else: 
+            self.log_detail_links("Parsing detail sekolah: %s" % response.url)
             npsn = response.meta['npsn']
             cordinat = response.meta['cordinat']
             nama_sekolah = response.meta['nama_sekolah']
@@ -340,12 +359,12 @@ class SpiderBeta(scrapy.Spider):
 
 
 
-            path = os.path.join('json')
+            path = os.path.join('json', kabupaten_json, jenjang_pen_json)
             os.makedirs(path, exist_ok=True)
             filename = f'{kabupaten_json}_{jenjang_pen_json}_{npsn}_.json'
 
-            local_path = f'~/engine-daud/Sekolah-Data-Kemdikbud/sekolahDataKemdikbud/json/{filename}'
-            s3path = f's3://ai-pipeline-raw-data/data/data_statistics/kemendikbud/{data_name}/json/{filename}'
+            local_path = f'~/engine-daud/Sekolah-Data-Kemdikbud/sekolahDataKemdikbud/json/{kabupaten_json}/{jenjang_pen_json}/{filename}'
+            s3path = f's3://ai-pipeline-raw-data/data/data_statistics/kemendikbud/{data_name}/json/{kabupaten_json}/{jenjang_pen_json}/{filename}'
 
             data = {
                 "link": response.url,
@@ -379,5 +398,12 @@ class SpiderBeta(scrapy.Spider):
                 }
             }
             save_json(data, os.path.join(path, filename))
-            upload_to_s3(local_path, s3path.replace('s3://', ''))
+            self.log_detail_links(f"Success save {filename}")
+            try:
+                upload_to_s3(local_path, s3path.replace('s3://', ''))
+                self.log_detail_links(f"Success upload {filename} to s3")
+            except Exception as e:
+                self.log_detail_links(f"Error upload to s3: {str(e)}")
+                
+            
 
