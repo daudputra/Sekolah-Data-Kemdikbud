@@ -7,8 +7,8 @@ def upload_to_s3(local_path, raw_path):
         'key': 'GLZG2JTWDFFSCQVE7TSQ',
         'secret': 'VjTXOpbhGvYjDJDAt2PNgbxPKjYA4p4B7Btmm4Tw',
         'endpoint_url': 'http://10.12.1.149:8000',
-
-        'anon': False
+        'anon': False,
+        'connect_timeout': 600
     }
     
     s3 = s3fs.core.S3FileSystem(**client_kwargs)
